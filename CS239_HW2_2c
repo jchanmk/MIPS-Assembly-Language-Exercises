@@ -1,0 +1,250 @@
+            .data
+menu0:      .asciiz "\nEnter a number, x, between 0 and 5 to estimate e^x, sin(x), cos(x): "         
+result1:    .asciiz "\ne^x = "         
+result2:    .asciiz "\nsin(x) = "
+result3:    .asciiz "\ncos(x) = "
+error0:      .asciiz "\nThat is not between 0 and 5!\n"         
+zeros:      .float  0.0
+ones: 	    .float  1.0
+twos: 	    .float  2.0
+zero2:	    .float  -0.00001
+fives:	    .float  5.000001
+
+
+            .text
+            
+main:
+########## First, initialize the variables used in this program.
+	addi $t0, $zero, 50	#	how many values of n to run
+	
+        addi $t6, $zero, 1	    # for finding x^n in loop efindxtotheen
+        addi $t7, $zero, 1
+        addi $t8, $zero, 1
+        
+        
+
+        l.s     $f1, zeros      # 0 
+        l.s     $f2, zeros      # variable x
+        l.s     $f3, zeros      # variable x copy
+        l.s     $f4, zeros 	# computation
+        l.s	$f5, ones	# 1 
+        l.s	$f6, ones	# n for x^n
+        l.s	$f6, ones	# indicator to break out of x^n loop in e
+        l.s	$f7, zeros	# indicator to break out of x^n loop in e
+        l.s	$f8, ones	# factorials for e starting from 2
+        l.s	$f9, ones	# n! for e
+        l.s	$f10, zeros	# final calculation for e
+        l.s	$f11, twos	# 2
+        l.s	$f12, fives	# 5.0001
+        l.s 	$f13, zero2	# -0.00001
+
+
+        
+menuloop: 
+  	jal printmenu
+        li       $v0, 6              
+	syscall
+	add.s    $f2, $f1, $f0  # stores x
+	add.s 	 $f3, $f1, $f2	# stores another copy of x
+	
+	c.le.s   $f0, $f13 	# if x is less than 0, error
+	bc1t 	 error	 
+	c.le.s   $f12, $f0 	# if x is less than 0, error
+	bc1t 	 error	 
+	
+	## start doing computations
+	## first e^x  - only going up to 4! for estimation
+	add.s 	 $f4, $f1, $f5	#adds 1 to computation
+	add.s 	 $f4, $f4, $f2	#adds x to computation
+	
+	
+############# Calculate e^x ##############
+loope: #compute x^n / n! starting at 2
+	add.s 	$f6, $f6, $f5 # finding the n to x^n Starts at 2
+	addi	$t6, $t6, 1 
+		# add.s 	$f7, $f7, $f5 # starts at 1
+		#addi	$t7, $t7, 1 
+	     
+		
+	efindxton:
+		mul.s 	$f3, $f2, $f3	# x * x
+		addi	$t7, $t7, 1
+		beq	$t7, $t6, efactorial
+		b efindxton
+		
+		#find n factorial
+	efactorial:
+		beq	        $t6, $t8, efinalcalc
+		add.s		$f8, $f8, $f5	#increments f8
+		addi		$t8, $t8, 1		
+		mul.s           $f9, $f9, $f8
+		b 		efactorial
+			   
+		# divide x^n by n!
+	efinalcalc:
+		div.s 	$f10, $f3, $f9
+		
+		add.s	$f4, $f4, $f10
+		bne	$t6, $t0, loope
+		
+		#something to show computation, the calculations are done at this point
+		li	$v0, 4
+		la	$a0, result1
+		syscall
+		li	$v0, 2
+		mov.s	$f12, $f4
+		syscall
+
+############# Calculate Sin x ##############
+	## these below resets essential variables for the next computation
+	l.s	 $f6, ones
+	addi	 $t6, $zero, 1 
+	add.s 	 $f3, $f1, $f2		# reinitializes $f3 to x from stored value from $f2
+	
+	addi     $t1, $zero, 0		# this is for the loop to know either to subtract or add
+	addi     $t2, $zero, 0
+	addi     $t3, $zero, 51		# to know whether or not to stop calculating
+	
+	addi	 $t7, $zero, 1		# variables to help break out of loops
+	addi 	 $t8, $zero, 1
+	l.s	 $f8, ones		# factorials for sinx starting from 2
+	l.s	 $f9, ones		# to help with n! calculation for sinx starting at 2
+	
+	add.s	 $f4, $f1, $f1		# resets computation variable
+	add.s 	 $f4, $f4, $f2		# adds x to computation
+	
+loopsinx:
+	add.s 	 $f6, $f6, $f11 # finding the n to x^2n Starts at 2
+	addi	 $t6, $t6, 2 
+		
+	sinxfindxton:
+		mul.s 	$f3, $f2, $f3	# x * x
+		mul.s 	$f3, $f2, $f3	# x^2 * x
+		addi	$t7, $t7, 2
+		beq	$t7, $t6, sinxfactorial
+		b sinxfindxton
+		
+		#find n factorial
+	sinxfactorial:
+		beq	        $t6, $t8, sinxfinalcalc
+		add.s		$f8, $f8, $f5	# increments f8 by 1
+		addi		$t8, $t8, 2		
+		mul.s           $f9, $f9, $f8
+		add.s		$f8, $f8, $f5	# increments f8 again by 1
+		mul.s           $f9, $f9, $f8
+		b 		sinxfactorial
+			   
+		# divide x^n by n!
+	sinxfinalcalc:
+		div.s 	$f10, $f3, $f9
+		
+		beq	$t1, $t2, sinxsubtract
+		add.s	$f4, $f4, $f10
+		addi 	$t1, $zero, 0
+		b 	sinxcheck
+		
+	sinxsubtract:
+		sub.s	$f4, $f4, $f10	
+		addi	$t1, $zero, 1
+		b 	sinxcheck
+	
+	sinxcheck:
+		bne	$t6, $t3, loopsinx
+		
+		#something to show computation, the calculations are done at this point
+		li	$v0, 4
+		la	$a0, result2 
+		syscall
+		li	$v0, 2
+		mov.s	$f12, $f4
+		syscall
+
+	
+############# Calculate Cos x ##############
+## these below resets essential variables for the next computation
+	l.s	 $f6, zeros
+	addi	 $t6, $zero, 0 
+	add.s 	 $f3, $f1, $f2		# reinitializes $f3 to x from stored value from $f2
+	
+	addi     $t1, $zero, 0		# this is for the loop to know either to subtract or add
+	addi     $t2, $zero, 0
+	addi     $t3, $zero, 50		# to know whether or not to stop calculating, how many things to add/subtract
+	addi	 $t4, $zero, 2		# for initial x*x
+	
+	addi	 $t7, $zero, 2		# variables to help break out of loops
+	addi 	 $t8, $zero, 0
+	l.s	 $f8, ones		# factorials for sinx starting from 2
+	l.s	 $f9, ones		# to help with n! calculation for sinx starting at 2
+	
+	add.s	 $f4, $f1, $f1		# resets computation variable
+	add.s 	 $f4, $f4, $f5		# adds 1 to computation
+	
+loopcosx:
+	add.s 	 $f6, $f6, $f11 # finding the n to x^2n Starts at 2
+	addi	 $t6, $t6, 2 
+	
+	bne	 $t6, $t4, cosxfindxton
+	mul.s 	 $f3, $f2, $f3		# x * x
+	add.s		$f8, $f8, $f5	# increments f8 by 1
+	addi		$t8, $t8, 2		
+	mul.s           $f9, $f9, $f8
+	b	 cosxfinalcalc
+			
+	cosxfindxton:
+		mul.s 	$f3, $f2, $f3	# x * x
+		mul.s 	$f3, $f2, $f3	# x^2 * x
+		addi	$t7, $t7, 2
+		beq	$t7, $t6, cosxfactorial
+		b cosxfindxton
+		
+		#find n factorial
+	cosxfactorial:
+		beq	        $t6, $t8, cosxfinalcalc
+		add.s		$f8, $f8, $f5	# increments f8 by 1
+		addi		$t8, $t8, 2		
+		mul.s           $f9, $f9, $f8
+		add.s		$f8, $f8, $f5	# increments f8 again by 1
+		mul.s           $f9, $f9, $f8
+		b 		cosxfactorial
+			   
+		# divide x^n by n!
+	cosxfinalcalc:
+		div.s 	$f10, $f3, $f9
+		
+		beq	$t1, $t2, cosxsubtract
+		add.s	$f4, $f4, $f10
+		addi 	$t1, $zero, 0
+		b 	cosxcheck
+		
+	cosxsubtract:
+		sub.s	$f4, $f4, $f10	
+		addi	$t1, $zero, 1
+		b 	cosxcheck
+	
+	cosxcheck:
+		bne	$t6, $t3, loopcosx
+		
+		# something to show computation, the calculations are done at this point
+		li	$v0, 4
+		la	$a0, result3 
+		syscall
+		li	$v0, 2
+		mov.s	$f12, $f4
+		syscall
+		b 	done
+		
+printmenu:
+        li       $v0, 4              # PRINT_STRING 
+	la       $a0, menu0          
+	syscall 
+	jr $ra
+	
+error:
+	li       $v0, 4              # PRINT_STRING 
+	la       $a0, error0          
+	syscall 
+	b menuloop
+	
+done:
+       	li      $v0, 10
+	syscall

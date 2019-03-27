@@ -1,0 +1,83 @@
+            .data
+menu0:      .asciiz "\nEnter a positive integer greater in between 2 and 100 to see if it is prime: "         
+result1:    .asciiz "\nThis integer is prime!\n"
+result2:    .asciiz "\nEnter 1 to exit, or any other integer to continue: "
+menuerror:  .asciiz "\nThis integer is not prime! \n "
+error:	    .asciiz "\nThis integer is not between 2 and 100! \n"
+
+            .text
+            
+main:
+########## First, initialize the variables used in this program.
+        addi $t0, $zero, 0          # variable: x
+        addi $t1, $zero, 2	    # to find divisor (x/2)
+        addi $t2, $zero, 0	    # x/2
+        addi $t3, $zero, 0	    # place holder for remainders
+        addi $t4, $zero, 1	    # too decrement divisor
+  
+  #beginning of code
+ menuloop: 
+  	jal printmenu
+        li       $v0, 5              
+	syscall
+	add      $t0, $zero, $v0 
+	ble 	 $t0, 1, error1
+	bge	 $t0, 101, error1
+	
+	#divide integer by 2 to get range of divisions
+	div	$t0, $t1
+	mflo 	$t2
+	add	$t2, $t2, $t4		# add 1 to the divisor 
+	###
+	###divide integer by x/2 and iterate/decrement to find if prime
+divide:
+	sub	$t2, $t2, $t4	# decrements x/2
+	beq 	$t2, 1, isprime
+	sub	$t3, $t3, $t3	# resets the remainder value
+	div	$t0, $t2	# divides x by x/2 to find remainder
+	mfhi	$t3		# stores remainder of prior division
+	bne 	$t3, 0, divide	# if the remainder of the division is 0, x is not prime and we can exit the loop 
+	jal 	notprime
+	b	continue
+	
+	
+	printmenu:
+        li       $v0, 4              # PRINT_STRING 
+	la       $a0, menu0          
+	syscall 
+	jr $ra
+	
+	isprime:
+	li       $v0, 4              # PRINT_STRING 
+	la       $a0, result1          
+	syscall 
+	b continue
+	
+	notprime:
+	li       $v0, 4               # PRINT_STRING
+	la       $a0, menuerror           
+	syscall 
+	jr $ra
+	
+	continue:
+	li	 $v0, 4
+	la	 $a0, result2
+	syscall
+	li       $v0, 5              
+	syscall
+	add      $s0, $zero, $v0 
+	bne      $s0, 1, menuloop
+	b done
+	
+error1:
+	li	 $v0, 4
+	la	 $a0, error
+	syscall
+	b 	 menuloop
+	
+	##########   Exiting the menu ... we're done!
+done:
+       	li       $v0, 10             # EXIT
+	syscall
+	
+	

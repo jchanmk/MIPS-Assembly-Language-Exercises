@@ -1,0 +1,140 @@
+            .data
+menu0:      .asciiz "\n1. Enter the length of a leg of a triangle \n"         
+menu1:      .asciiz "2. Enter the length of the other leg \n"         
+menu2:      .asciiz "3. Enter the length of the hypotenuse of the triangle \n"         
+result1:    .asciiz "\nThe triangle exists! \n"
+result2:    .asciiz "It is also a right triangle! \n"
+result3:    .asciiz "\nEnter 1 to exit, or any other integer to continue: "
+menuerror:  .asciiz "\nError:  These lengths do not make a triangle! \n "
+menuerror1:  .asciiz "But it is not a right triangle! \n "
+
+            .text
+           
+main:
+########## First, initialize the variables used in this program.
+        #addi $t0, $zero, 1          # variable: option
+        addi $t1, $zero, 0          # variable: x
+        addi $t2, $zero, 0          # variable: y
+        addi $t3, $zero, 0          # variable: z
+        addi $t4, $zero, 0	    # temp variable for calculations
+        addi $t5, $zero, 0	    # temp variable for calculations
+        addi $t6, $zero, 0	    # temp variable for calculations
+        addi $t7, $zero, 0	    # temp variable for calculations a^2 + b^2
+        addi $s0, $zero, 0	    # exit or continue
+        
+        #Menu
+        menuloop:
+        jal printfirst #this jumps to printfirst and stores the address of "jal printfirst" (this line) into $ra
+        li       $v0, 5              #so when jr $ra is called, it goes back up to jal print first and then executes following lines
+	syscall
+	add      $t1, $zero, $v0    
+	
+	
+	jal printsecond
+        li       $v0, 5              
+	syscall
+	add      $t2, $zero, $v0 
+	
+	jal printthird
+	li       $v0, 5              
+	syscall
+	add      $t3, $zero, $v0 	#hypotenuse
+	
+	###checking to see if it is a triangle (triangle inequality theorem)
+	add	 $t4, $t2, $t1		#add two legs to equal $t4
+	div	 $t3, $t4	
+	mflo 	 $t4
+	bne      $t4, 0, nottriangle
+	sub	 $t4, $t4, $t4
+	
+	add	 $t4, $t2, $t3
+	div	 $t1, $t4
+	mflo	 $t4
+	bne	 $t4, 0, nottriangle
+	sub	 $t4, $t4, $t4
+	
+	add	 $t4, $t3, $t1
+	div	 $t2, $t4
+	mflo	 $t4
+	bne	 $t4, 0, nottriangle
+	sub	 $t4, $t4, $t4
+	
+	jal printtriangle
+	########check to see if right triangle
+	mult 	 $t1, $t1
+	mflo 	 $t4
+	mult	 $t2, $t2
+	mflo	 $t5
+	mult	 $t3, $t3
+	mflo	 $t6
+	add	 $t7, $t4, $t5
+	div	 $t6, $t7
+	mfhi	 $t5
+	bne	 $t5, 0, notrighttriangle
+	
+	b 	printrighttriangle
+	
+	####print statements
+	printfirst:
+        li       $v0, 4               # PRINT_STRING
+	la       $a0, menu0           # The following are the lines
+	syscall   
+	jr $ra
+
+	
+	printsecond:
+	li	 $v0, 4
+	la	 $a0, menu1
+	syscall
+	jr $ra
+	
+	printthird:
+	li	 $v0, 4
+	la	 $a0, menu2
+	syscall
+	jr $ra
+	
+	printtriangle:
+	li	 $v0, 4
+	la	 $a0, result1
+	syscall
+	jr $ra
+	
+	printrighttriangle:
+	li	 $v0, 4
+	la	 $a0, result2
+	syscall
+	b continue
+	b 	menuloop
+	
+	notrighttriangle:
+	li	 $v0, 4
+	la	 $a0, menuerror1
+	syscall
+	b continue
+	b	menuloop
+	
+	nottriangle:
+	li	 $v0, 4
+	la	 $a0, menuerror
+	syscall
+	b continue
+	b	menuloop
+	
+	continue:
+	li	 $v0, 4
+	la	 $a0, result3
+	syscall
+	li       $v0, 5              
+	syscall
+	add      $s0, $zero, $v0 
+	bne      $s0, 1, menuloop
+	b done
+	#jr $ra
+	
+	done:
+	li       $v0, 10             # EXIT
+	syscall
+	
+	
+	

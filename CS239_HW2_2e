@@ -1,0 +1,50 @@
+            .data
+space:    .asciiz "  "
+
+            .text
+            
+main:
+########## First, initialize the variables used in this program.
+        addi $t0, $zero, 1          # variable: x
+        addi $t1, $zero, 2	    # to find divisor (x/2)
+        addi $t2, $zero, 0	    # x/2
+        addi $t3, $zero, 0	    # place holder for remainders
+       ## addi $t4, $zero, 1	    # too decrement divisor
+  
+  #beginning of code
+ menuloop: 
+ 	beq	  $t0, 100, done
+	addi      $t0, $t0, 1 
+	
+	#divide integer by 2 to get range of divisions
+	div	$t0, $t1
+	mflo 	$t2
+	addi	$t2, $t2, 1		# add 1 to the divisor 
+	###
+	###divide integer by x/2 and iterate/decrement to find if prime
+divide:
+	addi	$t2, $t2, -1	# decrements x/2
+	beq 	$t2, 1, isprime
+	sub	$t3, $t3, $t3	# resets the remainder value
+	div	$t0, $t2	# divides x by x/2 to find remainder
+	mfhi	$t3		# stores remainder of prior division
+	bne 	$t3, 0, divide	# if the remainder of the division is 0, x is not prime and we can exit the loop 
+	b	menuloop
+	
+	
+	isprime:
+	li       $v0, 1              # PRINT_STRING 
+	la       $a0, ($t0)          
+	syscall 
+	li       $v0, 4              # PRINT_STRING 
+	la       $a0, space          
+	syscall 
+	b menuloop
+
+	
+	##########   Exiting the menu ... we're done!
+done:
+       	li       $v0, 10             # EXIT
+	syscall
+	
+	
